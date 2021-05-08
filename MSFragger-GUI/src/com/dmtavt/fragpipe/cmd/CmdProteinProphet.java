@@ -146,6 +146,8 @@ public class CmdProteinProphet extends CmdBase {
         }
       }
 
+      if (pepxmlsPaths.get(0).endsWith(".iproph.pep.xml"))
+        cmd.add("--iprophet");
       cmd.add(filelist.toString());
 
       ProcessBuilder pb = new ProcessBuilder(cmd);
