@@ -86,7 +86,7 @@ public class FPOPCombinePSMValidationPanel extends JPanelBase {
     FormEntry feInputFolder = fe(uiTextFolder, "interact-pep-xml-directory", PREFIX)
             .tooltip(ghost).label("input folder:").create();
     uiTextCmdOpts = UiUtils.uiTextBuilder().cols(20).text(defaultCmdOpt()).create();
-    FormEntry feWorkdir = mu.feb("workdir", uiTextFolder).label("Input dir:")
+    final FormEntry feWorkdir = mu.feb("input_dir", uiTextFolder).label("Input dir:")
             .tooltip("interact.pep.xml will be searched in this directory").create();
     JButton btnBrowse = feWorkdir
             .browseButton(() -> FileChooserUtils.builder("Select output directory")
