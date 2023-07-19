@@ -158,18 +158,15 @@ def get_bin_path_pip_private_API(dist: str, bin_stem: str) -> pathlib.Path:
 	'''
 	import pip._internal.commands.show
 	import pathlib
-	try:
-		dist, = list(pip._internal.commands.show.search_packages_info([dist]))
-		files, location = (dist.get('files'), dist['location']) \
-			if isinstance(dist, dict) else \
-			(dist.files, dist.location)
-		if files is None and sys.platform == "win32":
-			script_path = (pathlib.Path(sys.executable).resolve().parent / "Scripts").resolve()
-			return (pathlib.Path(script_path) / (bin_stem + ".py")).resolve()
-		else:
-			rel_loc, = [e for e in files if pathlib.Path(e).stem == bin_stem]
-	except ValueError:
-		return
+	dist, = list(pip._internal.commands.show.search_packages_info([dist]))
+	files, location = (dist.get('files'), dist['location']) \
+		if isinstance(dist, dict) else \
+		(dist.files, dist.location)
+	if files is None and sys.platform == "win32":
+		script_path = (pathlib.Path(sys.executable).resolve().parent / "Scripts").resolve()
+		return (pathlib.Path(script_path) / (bin_stem + ".py")).resolve()
+	else:
+		rel_loc, = [e for e in files if pathlib.Path(e).stem == bin_stem]
 	return (pathlib.Path(location) / rel_loc).resolve()
 
 get_bin_path = get_bin_path_pip_CLI
@@ -189,13 +186,6 @@ if len(sys.argv) >= 6:
 if 'PATHEXT' in os.environ:
 	os.environ['PATHEXT'] = '.py' + os.pathsep + os.environ['PATHEXT']
 os.environ['PATH'] = os.getcwd() + os.pathsep + os.environ['PATH']
-
-philosopher = 'philosopher'
-which_philosopher = None if len(sys.argv) >= 7 else shutil.which('philosopher')
-
-# msproteomicstools_path = pathlib.Path('/storage/teog/anaconda3/bin')
-align_with_iRT: bool = True
-
 
 easypqp = get_bin_path('easypqp', 'easypqp')
 
@@ -282,11 +272,6 @@ dd = [pd.DataFrame({'modified_peptide': [e[0] for e in biognosys_rtkit_sorted],
 irt_df = pd.concat(dd).reset_index(drop=True)
 irt_file = workdir / 'irt.tsv'
 im_file = workdir / 'im.tsv'
-# irt_df.to_csv(irt_file, index=False, sep='\t', lineterminator='\n')
-'''easypqp convert --pepxml 1.pep_xml --spectra 1.mgf --exclude-range -1.5,3.5
-easypqp convert --pepxml 2.pep_xml --spectra 2.mgf --exclude-range -1.5,3.5'''
-'easypqp convert --pepxml interact.pep.xml --spectra 1.mgf --unimod unimod.xml --exclude-range -1.5,3.5'
-f'easypqp library --psmtsv {psm_tsv_file} --rt_reference {irt_file} --out out.tsv *.psmpkl *.peakpkl'
 # https://github.com/grosenberger/easypqp/blob/master/easypqp/data/unimod.xml?raw=true
 # http://www.unimod.org/xml/unimod.xml
 from typing import List
@@ -302,7 +287,7 @@ def pairing_pepxml_spectra_v3(spectras: List[pathlib.PurePath], pep_xmls: List[p
 		pep_xmls]
 	l = [[p for p, bn in zip(pep_xmls, pepxml_basename) if e.casefold() == bn.casefold()] for e in spectra_files_basename]
 
-	def get_rank(name):
+	def get_rank(name: pathlib.PurePath) -> str:
 		mo = re.compile('_rank[0-9]+$').search(name_no_ext(name))
 		return '' if mo is None else mo[0]
 
@@ -324,10 +309,10 @@ filelist_easypqp_library.write_text('\n'.join(map(os.fspath, easypqp_library_inf
 use_iRT = irt_choice is not Irt_choice.no_iRT
 use_im = im_choice is not Im_choice.no_im
 filelist_arg = [resolve_mapped(filelist_easypqp_library)]
-def easypqp_library_cmd(use_irt: bool, use_im: bool):
-# def easypqp_library_cmd(pep_fdr: float = None, prot_fdr: float = None):
+
+
+def easypqp_library_cmd(use_irt: bool, use_im: bool) -> list[str]:
 	return [resolve_mapped(easypqp), 'library',
-			# '--peptide_fdr_threshold', str(pep_fdr), '--protein_fdr_threshold', str(prot_fdr),
 			'--psmtsv', resolve_mapped(psm_tsv_file), '--peptidetsv', resolve_mapped(peptide_tsv_file), ] + \
 		   (['--rt_reference', resolve_mapped(irt_file)] if use_irt else []) + \
 		   (['--im_reference', resolve_mapped(im_file)] if use_im else []) + \
@@ -340,8 +325,7 @@ easypqp_cmds = '\n'.join(' '.join(map(shlex.quote, e)) for e in easypqp_convert_
 allcmds = easypqp_cmds
 
 
-def main_easypqp():
-
+def main_easypqp() -> None:
 	workdir.mkdir(exist_ok=overwrite)
 	output_directory = workdir / 'easypqp_files'
 	output_directory.mkdir(exist_ok=overwrite)
@@ -408,8 +392,7 @@ def format_con_lib_for_DIA_NN(t: pd.DataFrame):
 			  'ProteinName':'ProteinId'}, axis=1, inplace=False, errors='raise')
 
 
-
-def easypqp_lib_export(lib_type: str):
+def easypqp_lib_export(lib_type: str) -> None:
 	import pandas as pd
 
 	easypqp_lib = pd.read_csv('easypqp_lib_openswath.tsv', sep='\t')
